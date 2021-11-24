@@ -14,7 +14,7 @@
     Author:  Paul Harrison
 #>
 
-$LogFile = 'C:\temp\adreport.html' #"\\servername\share\path\ADReport.html"
+$LogFile = '\\servername\share\path\ADReport.html'
 
 #Values to define if you want it to email automatically - also uncomment the last line of this file
 <#
