@@ -86,8 +86,9 @@ ForEach ($domain in $TargetDomains) {
     $ExtraObjectsInUsersContainer = Get-ADObject -SearchBase $('CN=Users,' + $DomainDN) -Filter { ObjectClass -ne 'container' } -Properties isCriticalSystemObject, samaccountname -Server $domain |
         Where-Object { $_.SamAccountName -notin $NormalObjectsInUsers -and $_.isCriticalSystemObject -ne $true -and $_.SamAccountName -ne $Null -and -not($_.samaccountname.startswith('AAD_')) -and -not($_.samaccountname.startswith('MOL_')) -and ($_.samaccountname -ne 'SUPPORT_388945a0') -and -not($_.samaccountname -like 'CAS_*}*') } 
     $HTMLReport += New-HTMLReportSection -SectionTitle "$domain - Extra objects in the Users container" -SectionContents $($ExtraObjectsInUsersContainer | Select-Object name, objectclass)
+    
     #Find all empty groups
-    $emptyGroups = Get-ADGroup -Filter * -Properties members -Server $domain | Where-Object { $($_.members.count) -eq 0 }
+    $emptyGroups = Get-ADGroup -Filter {isCriticalSystemObject -ne $true} -Properties members,isCriticalSystemObject -Server $domain | Where-Object { $($_.members.count) -eq 0 }
     $HTMLReport += New-HTMLReportSection -SectionTitle "$domain - Empty groups" -SectionContents $($emptyGroups | Select-Object samaccountname, distinguishedName)
 
     #Find DCs not protected from accidental deletion
