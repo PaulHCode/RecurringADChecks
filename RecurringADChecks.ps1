@@ -137,20 +137,20 @@ ForEach ($domain in $TargetDomains) {
 
     #Find unlinked GPOs
     $UnlinkedGPOs = Get-GPO -All -Domain $domain | Where-Object { $_ | Get-GPOReport -ReportType XML -Domain $domain | Select-String -NotMatch '<LinksTo>' }
-    $HTMLReport += New-HTMLReportSection -SectionTitle "$domain - Unlinked GPOs" -SectionContents $($UnlinkedGPOs | Select-Object displayname, creationtime, modificationtime, wmifilter)
+    $HTMLReport += New-HTMLReportSection -SectionTitle "$domain - Unlinked GPOs" -SectionContents $($UnlinkedGPOs | Select-Object displayname, creationtime, modificationtime, @{N='WmiFilter';E={$_.wmifilter.Name}})
 
     #Users without a password required
     $UsersWithoutAPasswordRequired = Get-ADUser -Filter { PasswordNotRequired -eq $true } -Properties passwordNotRequired -Server $domain
     $HTMLReport += New-HTMLReportSection -SectionTitle "$domain - Users without a password required (passwordNotRequired = true)" -SectionContents $($UsersWithoutAPasswordRequired | Select-Object samaccountname)
 
     #User objects with PasswordNeverExpires = true that are not in a service accounts OU
-    $PwdNeverExpires = Get-ADUser -Filter { PasswordNeverExpires -eq $true -and samaccountname -notlike 'HealthMailbox*' } -Properties PasswordNeverExpires -Server $domain | Where-Object { $_.distinguishedName -notlike "*CN=Service Accounts*,$DomainDN" }
+    $PwdNeverExpires = Get-ADUser -Filter { PasswordNeverExpires -eq $true -and samaccountname -notlike 'HealthMailbox*' } -Properties PasswordNeverExpires -Server $domain | Where-Object { $_.distinguishedName -notlike "*OU=Service Accounts*,$DomainDN" }
     $HTMLReport += New-HTMLReportSection -SectionTitle "$domain - Users with PasswordNeverExpires = true that are not in a service accounts OU" -SectionContents $($PwdNeverExpires | Select-Object samaccountname, enabled, name, passwordneverexpires, distinguishedname)
 
     #Users with a passwordLastSet over 1 year old
     $old = (Get-Date).AddDays(-365)
     $OldUserObjects = Get-ADUser -Filter { passwordLastSet -lt $old -and samaccountname -notlike 'HealthMailbox*' -and Enabled -eq $true } -Properties PasswordLastSet -Server $domain
-    $HTMLReport += New-HTMLReportSection -SectionTitle "$domain - Enabled User Objects with a password over 1 year old" -SectionContents $($OldUserObjects | Select-Object samaccountname, enabled, name, passwordneverexpires, distinguishedname)
+    $HTMLReport += New-HTMLReportSection -SectionTitle "$domain - Enabled User Objects with a password over 1 year old or never set" -SectionContents $($OldUserObjects | Select-Object samaccountname, enabled, name, passwordneverexpires, distinguishedname)
 
 } #finished collecting data
 
